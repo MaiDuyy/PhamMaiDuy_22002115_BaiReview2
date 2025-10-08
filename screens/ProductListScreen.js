@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
 import api from '../service/shoeService'
 import ProductCard from '../components/ProductCard'
+import { confirmAsync, safeAlert } from '../utils/alerts'
 
 export default function ProductListScreen({ navigation }) {
   const [products, setProducts] = useState([])
@@ -13,7 +14,7 @@ export default function ProductListScreen({ navigation }) {
       const data = await api.list()
       setProducts(Array.isArray(data) ? data : [])
     } catch (e) {
-      Alert.alert('Lỗi', 'Không thể tải danh sách sản phẩm')
+      safeAlert('Lỗi', 'Không thể tải danh sách sản phẩm')
     } finally {
       setLoading(false)
     }
@@ -24,23 +25,27 @@ export default function ProductListScreen({ navigation }) {
     return unsubscribe
   }, [navigation])
 
-const handleDelete = async (id) => {
+  const getKey = (item) => item?._id || item?.id
 
-    const isConfirmed = window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');
+  const handleDelete = async (item) => {
+    const key = getKey(item)
+    if (!key) {
+      safeAlert('Lỗi', 'Không xác định được ID sản phẩm')
+      return
+    }
 
-  if (!isConfirmed) return; 
-  
-          try {
-            await api.delete(id)
-            setProducts(prev => prev.filter(p => p.id !== id))
-            Alert.alert('Đã xóa', 'Sản phẩm đã được xóa thành công')
-          } catch (e) {
-            Alert.alert('Lỗi', 'Không thể xóa sản phẩm')
-            console.error(e)
-          }
-        
-}
+    const ok = await confirmAsync('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa sản phẩm này không?')
+    if (!ok) return
 
+    try {
+      await api.delete(key) // backend sẽ nhận _id hoặc id (xem phần server bên dưới)
+      setProducts(prev => prev.filter(p => (p._id || p.id) !== key))
+      safeAlert('Đã xóa', 'Sản phẩm đã được xóa')
+    } catch (e) {
+      console.error(e)
+      safeAlert('Lỗi', 'Không thể xóa sản phẩm')
+    }
+  }
 
   if (loading) {
     return (
@@ -55,12 +60,12 @@ const handleDelete = async (id) => {
     <View style={styles.container}>
       <FlatList
         data={products}
-        keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
+        keyExtractor={(item, idx) => String(getKey(item) ?? idx)}
         renderItem={({ item }) => (
           <ProductCard
             item={item}
             onEdit={() => navigation.navigate('ProductForm', { mode: 'edit', item })}
-            onDelete={() => handleDelete(item.id)}
+            onDelete={() => handleDelete(item)}
           />
         )}
         contentContainerStyle={{ paddingBottom: 90 }}

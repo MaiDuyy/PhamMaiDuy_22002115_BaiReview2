@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView, Alert } from 'react-native'
+import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView } from 'react-native'
 import api from '../service/shoeService'
+import { safeAlert } from '../utils/alerts'
+
 const sizes = ['S', 'M', 'L', 'XL', 'XXL']
 
 export default function ProductFormScreen({ navigation, route }) {
@@ -44,36 +46,36 @@ export default function ProductFormScreen({ navigation, route }) {
     return null
   }
 
- const handleSubmit = async () => {
-  const err = validate();
-  if (err) return showAlert("Thiếu dữ liệu", err);
-  if (submitting) return;
+  const handleSubmit = async () => {
+    const err = validate()
+    if (err) { safeAlert('Thiếu dữ liệu', err); return }
+    if (submitting) return
 
-  const price = Number(form.price);
-  const quantity = parseInt(form.quantity, 10);
-
-  if (Number.isNaN(price) || Number.isNaN(quantity)) {
-    return showAlert("Lỗi", "Giá/SL phải là số hợp lệ");
-  }
-
-  const payload = { ...form, price, quantity };
-
-  try {
-    setSubmitting(true);
-    if (isEdit) {
-      await api.update(item.id || item._id, payload);
-      window.alert("Thành công", "Đã cập nhật sản phẩm");
-    } else {
-      await api.add(payload);
-      window.alert("Thành công", "Đã thêm sản phẩm");
+    const payload = {
+      ...form,
+      price: Number(form.price),
+      quantity: parseInt(form.quantity, 10),
     }
-    navigation.goBack();
-  } catch (e) {
-    window.alert("Lỗi", isEdit ? "Không thể cập nhật" : "Không thể thêm sản phẩm");
-  } finally {
-    setSubmitting(false);
+
+    try {
+      setSubmitting(true)
+      if (isEdit) {
+        const key = item?._id || item?.id
+        if (!key) { safeAlert('Lỗi', 'Không xác định được ID sản phẩm'); return }
+        await api.update(key, payload)
+        safeAlert('Thành công', 'Đã cập nhật sản phẩm')
+      } else {
+        await api.add(payload)
+        safeAlert('Thành công', 'Đã thêm sản phẩm')
+      }
+      navigation.goBack()
+    } catch (e) {
+      console.error('Submit error:', e)
+      safeAlert('Lỗi', isEdit ? 'Không thể cập nhật' : 'Không thể thêm sản phẩm')
+    } finally {
+      setSubmitting(false)
+    }
   }
-};
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
@@ -118,10 +120,7 @@ export default function ProductFormScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  input: {
-    backgroundColor: '#f7f7f7', borderRadius: 8, padding: 12, marginBottom: 10,
-    borderWidth: 1, borderColor: '#ddd'
-  },
+  input: { backgroundColor: '#f7f7f7', borderRadius: 8, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#ddd' },
   label: { fontWeight: '600', marginBottom: 6, marginTop: 4 },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   sizeChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: '#bbb' },
