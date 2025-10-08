@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import api from '../service/shoeService'
-
 const sizes = ['S', 'M', 'L', 'XL', 'XXL']
 
 export default function ProductFormScreen({ navigation, route }) {
@@ -45,33 +44,36 @@ export default function ProductFormScreen({ navigation, route }) {
     return null
   }
 
-  const handleSubmit = async () => {
-    const err = validate()
-    if (err) return Alert.alert('Thiếu dữ liệu', err)
-    if (submitting) return
+ const handleSubmit = async () => {
+  const err = validate();
+  if (err) return showAlert("Thiếu dữ liệu", err);
+  if (submitting) return;
 
-    const payload = {
-      ...form,
-      price: Number(form.price),
-      quantity: parseInt(form.quantity, 10)
-    }
+  const price = Number(form.price);
+  const quantity = parseInt(form.quantity, 10);
 
-    try {
-      setSubmitting(true)
-      if (isEdit) {
-        await api.update(item.id, payload)
-        Alert.alert('Thành công', 'Đã cập nhật sản phẩm')
-      } else {
-        await api.add(payload)
-        Alert.alert('Thành công', 'Đã thêm sản phẩm')
-      }
-      navigation.goBack()
-    } catch (e) {
-      Alert.alert('Lỗi', isEdit ? 'Không thể cập nhật' : 'Không thể thêm sản phẩm')
-    } finally {
-      setSubmitting(false)
-    }
+  if (Number.isNaN(price) || Number.isNaN(quantity)) {
+    return showAlert("Lỗi", "Giá/SL phải là số hợp lệ");
   }
+
+  const payload = { ...form, price, quantity };
+
+  try {
+    setSubmitting(true);
+    if (isEdit) {
+      await api.update(item.id || item._id, payload);
+      window.alert("Thành công", "Đã cập nhật sản phẩm");
+    } else {
+      await api.add(payload);
+      window.alert("Thành công", "Đã thêm sản phẩm");
+    }
+    navigation.goBack();
+  } catch (e) {
+    window.alert("Lỗi", isEdit ? "Không thể cập nhật" : "Không thể thêm sản phẩm");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>

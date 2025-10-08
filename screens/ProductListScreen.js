@@ -25,15 +25,11 @@ export default function ProductListScreen({ navigation }) {
   }, [navigation])
 
 const handleDelete = async (id) => {
-  Alert.alert(
-    'Xác nhận xóa',
-    'Bạn có chắc muốn xóa sản phẩm này không?',
-    [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Xóa',
-        style: 'destructive',
-        onPress: async () => {
+
+    const isConfirmed = window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');
+
+  if (!isConfirmed) return; 
+  
           try {
             await api.delete(id)
             setProducts(prev => prev.filter(p => p.id !== id))
@@ -42,11 +38,7 @@ const handleDelete = async (id) => {
             Alert.alert('Lỗi', 'Không thể xóa sản phẩm')
             console.error(e)
           }
-        }
-      }
-    ],
-    { cancelable: true }
-  )
+        
 }
 
 
