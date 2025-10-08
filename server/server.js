@@ -39,6 +39,17 @@ app.get("/shoes", async (req, res) => {
   }
 })
 
+app.post("/shoes", async (req, res) => {
+  try {
+    const newShoe = new Shoe(req.body);
+    const saved = await newShoe.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: "Dữ liệu không hợp lệ" });
+  }
+});
+
 // GET one by _id or id
 app.get("/shoes/:id", async (req, res) => {
   const key = req.params.id
